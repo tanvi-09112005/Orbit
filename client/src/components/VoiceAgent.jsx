@@ -349,7 +349,7 @@ const base64Audio = btoa(binary)
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-16 right-0 w-72 bg-white rounded-2xl shadow-xl border border-border p-4"
+           className="fixed bottom-32 left-4 w-72 bg-white rounded-2xl shadow-xl border border-border p-4 z-50"
           >
             {agentState !== 'processing' && (
               <button onClick={dismiss} className="absolute top-3 right-3 text-text-secondary hover:text-foreground">
