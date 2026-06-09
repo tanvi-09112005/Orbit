@@ -147,60 +147,72 @@ export default function AppLayout() {
       <div className="flex flex-col h-screen bg-background">
 
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-white border-b border-border px-5 py-4 flex items-center justify-between">
-          <h1 className="text-h2 text-primary font-serif">
-            {isChild ? 'My Space' : 'Orbit'}
-          </h1>
-          {!isChild && (
-            <div className="relative" ref={notifRef}>
-              <button
-                onClick={() => setNotifOpen((v) => !v)}
-                className="relative p-2 text-text-secondary hover:text-foreground transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell size={24} />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-coral rounded-full flex items-center justify-center">
-                    <span className="text-[9px] text-white font-bold">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  </span>
-                )}
-              </button>
+       <header className="sticky top-0 z-10 bg-white border-b border-border px-5 py-4 flex items-center justify-between">
+  <h1 className="text-h2 text-primary font-serif">
+    {isChild ? 'My Space' : 'Orbit'}
+  </h1>
+  {!isChild && (
+    <div className="flex items-center gap-2">
+      {/* Notification bell */}
+      <div className="relative" ref={notifRef}>
+        <button
+          onClick={() => setNotifOpen((v) => !v)}
+          className="relative p-2 text-text-secondary hover:text-foreground transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell size={24} />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 w-4 h-4 bg-coral rounded-full flex items-center justify-center">
+              <span className="text-[9px] text-white font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            </span>
+          )}
+        </button>
 
-              {/* Notification dropdown */}
-              {notifOpen && (
-                <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-border z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <p className="text-body font-semibold">Notifications</p>
-                    <button onClick={() => setNotifOpen(false)} className="text-text-secondary hover:text-foreground">
-                      <X size={18} />
-                    </button>
+        {/* Notification dropdown */}
+        {notifOpen && (
+          <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-border z-50 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <p className="text-body font-semibold">Notifications</p>
+              <button onClick={() => setNotifOpen(false)} className="text-text-secondary hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length > 0 ? (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`px-4 py-3 border-b border-border last:border-0 ${n.urgent ? 'bg-coral-light' : 'bg-white'}`}
+                  >
+                    <p className={`text-body font-semibold ${n.urgent ? 'text-coral' : 'text-foreground'}`}>
+                      {n.text}
+                    </p>
+                    {n.sub && <p className="text-caption text-text-secondary mt-0.5">{n.sub}</p>}
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`px-4 py-3 border-b border-border last:border-0 ${n.urgent ? 'bg-coral-light' : 'bg-white'}`}
-                        >
-                          <p className={`text-body font-semibold ${n.urgent ? 'text-coral' : 'text-foreground'}`}>
-                            {n.text}
-                          </p>
-                          {n.sub && <p className="text-caption text-text-secondary mt-0.5">{n.sub}</p>}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-8 text-center">
-                        <p className="text-body text-text-secondary">All clear — nothing needs attention</p>
-                      </div>
-                    )}
-                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-body text-text-secondary">All clear — nothing needs attention</p>
                 </div>
               )}
             </div>
-          )}
-        </header>
+          </div>
+        )}
+      </div>
+
+      {/* Avatar → Profile */}
+      <button
+        onClick={() => navigate('/profile')}
+        className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+        aria-label="Profile"
+      >
+        {(user?.user_metadata?.name || 'U')[0].toUpperCase()}
+      </button>
+    </div>
+  )}
+</header>
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto pb-20 px-5">
