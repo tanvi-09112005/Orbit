@@ -1,0 +1,7 @@
+client/.env.local
+client/.env
+desktop.ini
+**/desktop.ini
+node_modules
+client/dist
+.DS_Store
