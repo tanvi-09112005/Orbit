@@ -22,18 +22,15 @@ export function usePushNotifications() {
       try {
         const registration = await navigator.serviceWorker.ready
 
-        // Check if already subscribed
         const existing = await registration.pushManager.getSubscription()
         if (existing) {
           await saveSubscription(existing, user.id)
           return
         }
 
-        // Request permission
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') return
 
-        // Subscribe
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
@@ -52,10 +49,7 @@ export function usePushNotifications() {
 async function saveSubscription(subscription, userId) {
   const subJson = subscription.toJSON()
   await supabase.from('user_push_subscriptions').upsert(
-    {
-      user_id: userId,
-      subscription: subJson,
-    },
+    { user_id: userId, subscription: subJson },
     { onConflict: 'user_id' }
   )
-}s
+}

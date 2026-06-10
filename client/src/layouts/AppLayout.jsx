@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'
 import { format } from 'date-fns'
 import { Bell, X } from 'lucide-react'
 import Card from '../components/ui/Card'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 export const PermissionContext = createContext({ role: 'parent', permissions: {}, isOwner: false })
 export const usePermissions = () => useContext(PermissionContext)
@@ -40,7 +41,7 @@ export default function AppLayout() {
   useEffect(() => {
     if (user && !family) fetchFamily()
   }, [user])
-
+usePushNotifications()
   // Close notif dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
