@@ -312,7 +312,7 @@ export default function WellbeingPage() {
               className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
             />
           </div>
-          <Button className="w-full" disabled={!selectedMood} loading={addMood.isPending} onClick={() => addMood.mutate()}>
+          <Button className="w-full" disabled={!selectedMood} loading={addMood.isPending}>
             Save
           </Button>
         </div>
@@ -327,7 +327,7 @@ export default function WellbeingPage() {
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Write a note about how things are going..."
             rows={5}
-            className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
+           className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
             autoFocus
           />
           <Button
