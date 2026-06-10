@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 
-const PUSH_NOTIFY_URL = 'https://innyndztbmrynnzmwgdt.supabase.co/functions/v1/push-notify'
+const PUSH_NOTIFY_URL = 'https://innyndztbmrynnzmwgdt.supabase.co/functions/v1/push_notify'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubnluZHp0Ym1yeW5uem13Z2R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDg3NjIsImV4cCI6MjA5NjA4NDc2Mn0.0YNM8eBgOmWhAfYvvFxvzl8L026DzkMxwBVITCzptfI'
 
 async function sendPushToFamily(familyId: string, title: string, body: string, url: string) {
