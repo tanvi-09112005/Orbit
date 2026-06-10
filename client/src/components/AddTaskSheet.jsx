@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useFamilyStore } from '../stores/familyStore'
 import { useUIStore } from '../stores/uiStore'
+import { notifyTaskAssigned } from '../lib/pushTriggers'
 import BottomSheet from './ui/BottomSheet'
 import Input from './ui/Input'
 import Button from './ui/Button'
@@ -22,7 +23,6 @@ export default function AddTaskSheet({ open, onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Only show real joined members in the assignee picker — no pending invites
   const assignableMembers = members.filter((m) => m.user_id && m.joined_at)
 
   const reset = () => {
@@ -30,10 +30,7 @@ export default function AddTaskSheet({ open, onClose }) {
     setChildId(''); setNotes(''); setError('')
   }
 
-  const handleClose = () => {
-    reset()
-    onClose()
-  }
+  const handleClose = () => { reset(); onClose() }
 
   const handleSave = async () => {
     if (!title.trim()) { setError('Task title is required'); return }
@@ -54,6 +51,16 @@ export default function AddTaskSheet({ open, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['tasks', family?.id] })
       queryClient.invalidateQueries({ queryKey: ['tasks', 'today', family?.id] })
       queryClient.invalidateQueries({ queryKey: ['insights', 'balance', family?.id] })
+
+      // Notify assigned member if it's someone else
+      if (assignedTo) {
+        const assignedMember = assignableMembers.find((m) => m.id === assignedTo)
+        const myName = members.find((m) => m.user_id === user?.id)?.profiles?.name || 'Someone'
+        if (assignedMember && assignedMember.user_id !== user?.id) {
+          notifyTaskAssigned(family.id, title.trim(), assignedMember.user_id, myName)
+        }
+      }
+
       addToast('Task added', 'success')
       handleClose()
     } catch (err) {
@@ -74,7 +81,6 @@ export default function AddTaskSheet({ open, onClose }) {
           error={error}
         />
 
-        {/* Assign to — only joined members */}
         {assignableMembers.length > 0 && (
           <div>
             <p className="text-body font-semibold mb-2">Assign to</p>
@@ -95,7 +101,6 @@ export default function AddTaskSheet({ open, onClose }) {
           </div>
         )}
 
-        {/* Due date */}
         <Input
           label="Due date (optional)"
           type="date"
@@ -103,7 +108,6 @@ export default function AddTaskSheet({ open, onClose }) {
           onChange={(e) => setDueDate(e.target.value)}
         />
 
-        {/* Link to child */}
         {children.length > 0 && (
           <div>
             <p className="text-body font-semibold mb-2">Related to (optional)</p>
@@ -120,7 +124,6 @@ export default function AddTaskSheet({ open, onClose }) {
           </div>
         )}
 
-        {/* Notes */}
         <div>
           <p className="text-body font-semibold mb-2">Notes (optional)</p>
           <textarea

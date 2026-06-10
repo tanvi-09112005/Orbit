@@ -12,15 +12,16 @@ import Skeleton from '../../components/ui/Skeleton'
 import BottomSheet from '../../components/ui/BottomSheet'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
-const MOOD_LABEL = { 1: 'Stressed', 2: 'Fine', 3: 'Great' }
-const MOOD_EMOJI = { 1: '😟', 2: '😐', 3: '😊' }
-
 export default function WellbeingPage() {
+  // Constants inside component to avoid circular dependency in minified build
+  const MOOD_LABEL = { 1: 'Stressed', 2: 'Fine', 3: 'Great' }
+  const MOOD_EMOJI = { 1: '😟', 2: '😐', 3: '😊' }
+
   const { childId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
-  const { children, members } = useFamilyStore()
+  const { children } = useFamilyStore()
   const child = children.find((c) => c.id === childId)
 
   const [activeTab, setActiveTab] = useState('mood')
@@ -70,7 +71,9 @@ export default function WellbeingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mood', childId] })
       queryClient.invalidateQueries({ queryKey: ['mood', 'last', childId] })
-      setSelectedMood(null); setMoodNote(''); setMoodSheet(false)
+      setSelectedMood(null)
+      setMoodNote('')
+      setMoodSheet(false)
       setMoodSaved(true)
       setTimeout(() => setMoodSaved(false), 2500)
     },
@@ -102,7 +105,8 @@ export default function WellbeingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', childId] })
-      setNoteText(''); setNoteSheet(false)
+      setNoteText('')
+      setNoteSheet(false)
     },
   })
 
@@ -113,7 +117,8 @@ export default function WellbeingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', childId] })
-      setEditingNote(null); setNoteText('')
+      setEditingNote(null)
+      setNoteText('')
     },
   })
 
@@ -146,6 +151,8 @@ export default function WellbeingPage() {
 
   const trend = getTrend()
   const trendColor = trend === 'Improving' ? 'text-teal' : trend === 'Declining' ? 'text-coral' : 'text-text-secondary'
+
+  const moodTickFormatter = (v) => MOOD_LABEL[v] || ''
 
   return (
     <div className="space-y-4 pt-4 pb-8">
@@ -221,7 +228,13 @@ export default function WellbeingPage() {
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={chartData}>
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis domain={[1, 3]} ticks={[1, 2, 3]} tickFormatter={(v) => MOOD_LABEL[v]} tick={{ fontSize: 10 }} width={55} />
+                  <YAxis
+                    domain={[1, 3]}
+                    ticks={[1, 2, 3]}
+                    tickFormatter={moodTickFormatter}
+                    tick={{ fontSize: 10 }}
+                    width={55}
+                  />
                   <Tooltip formatter={(v) => MOOD_LABEL[v]} />
                   <Line type="monotone" dataKey="mood" stroke="#2D1B8E" strokeWidth={2} dot={false} />
                 </LineChart>
@@ -312,7 +325,7 @@ export default function WellbeingPage() {
               className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
             />
           </div>
-          <Button className="w-full" disabled={!selectedMood} loading={addMood.isPending}>
+          <Button className="w-full" disabled={!selectedMood} loading={addMood.isPending} onClick={() => addMood.mutate()}>
             Save
           </Button>
         </div>
@@ -327,7 +340,7 @@ export default function WellbeingPage() {
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Write a note about how things are going..."
             rows={5}
-           className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
+            className="w-full border border-border rounded-xl px-4 py-3 text-body focus:outline-none focus:ring-2 focus:ring-primary bg-white resize-none"
             autoFocus
           />
           <Button
