@@ -22,12 +22,16 @@ export function usePushNotifications() {
       try {
         const registration = await navigator.serviceWorker.ready
 
-        const existing = await registration.pushManager.getSubscription()
-        if (existing) {
-          await saveSubscription(existing, user.id)
-          return
-        }
-
+      const existing = await registration.pushManager.getSubscription()
+if (existing) {
+  if (existing.endpoint.includes('/fcm/send/')) {
+    await existing.unsubscribe()  // force fresh subscription
+    // falls through to create new one below
+  } else {
+    await saveSubscription(existing, user.id)
+    return
+  }
+}
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') return
 
