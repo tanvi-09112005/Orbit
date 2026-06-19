@@ -15,7 +15,7 @@ const firebaseConfig = {
 }
 
 // VAPID key from Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
-const VAPID_KEY = 'BAhwUD92Lzu8rvcr4PbCZ4JJg1s5NUrbd1NEwClEQfy5K1BpqH6rglUIAt_2THYF2UsTewpd87wVZx4efBM6IMs'
+const VAPID_KEY = 'BO_lECk5-uEDhPmbWcv9dP4Gt4wWBRJzXUI3Fx7mQygZ53VvdJh4jyxyW8SI_yI0QzGqWYxeTOxwqvNfOUrmtQA'
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
