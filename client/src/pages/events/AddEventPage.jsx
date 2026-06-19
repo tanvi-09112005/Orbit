@@ -7,7 +7,7 @@ import { useFamilyStore } from '../../stores/familyStore'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { ChevronLeft } from 'lucide-react'
-
+import { notifyEventAdded } from '../../lib/pushTriggers'
 const RECURRENCE_OPTIONS = [
   { value: '',          label: 'Does not repeat' },
   { value: 'daily',     label: 'Every day' },
@@ -67,6 +67,7 @@ export default function AddEventPage() {
       // Insert the base event
       const { error: insertError } = await supabase.from('events').insert([eventData])
       if (insertError) throw insertError
+      notifyEventAdded(family.id, title.trim(), date)
 
       // If recurring, create the next N occurrences upfront
       if (recurrence) {
