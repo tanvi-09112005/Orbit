@@ -76,7 +76,7 @@ export default function SchoolPage() {
 
   // Notices state
   const [uploading, setUploading] = useState(false)
-  const [uploadStep, setUploadStep] = useState<'uploading' | 'extracting' | 'parsing' | null>(null)
+ const [uploadStep, setUploadStep] = useState(null)
   const [parsedItems, setParsedItems] = useState(null)
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [addingItems, setAddingItems] = useState(false)
