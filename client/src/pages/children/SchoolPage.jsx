@@ -14,6 +14,46 @@ import Skeleton from '../../components/ui/Skeleton'
 import BottomSheet from '../../components/ui/BottomSheet'
 import Input from '../../components/ui/Input'
 
+// ── Client-side text extraction ───────────────────────────────
+async function extractTextFromFile(file){
+  if (file.type === 'application/pdf') {
+    // For digital PDFs: read raw text content
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      const decoder = new TextDecoder('latin1')
+      const raw = decoder.decode(bytes)
+      // Extract readable strings from PDF structure
+      const textMatches = raw.match(/\(([^)]{2,})\)/g) || []
+      const text = textMatches
+        .map(m => m.slice(1, -1))
+        .filter(t => /[a-zA-Z]{2,}/.test(t) && !/^[^\x20-\x7E]/.test(t))
+        .join(' ')
+        .replace(/[^\x20-\x7E\n]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 5000)
+      if (text.length > 100) return text
+    } catch {
+      // fall through to Tesseract
+    }
+  }
+
+  // For images (and scanned PDFs that yielded no text): use Tesseract OCR
+  try {
+    const { createWorker } = await import('tesseract.js')
+    const worker = await createWorker('eng')
+    const imageUrl = URL.createObjectURL(file)
+    const { data } = await worker.recognize(imageUrl)
+    URL.revokeObjectURL(imageUrl)
+    await worker.terminate()
+    return (data.text || '').slice(0, 5000)
+  } catch (err) {
+    console.error('OCR failed:', err)
+    return ''
+  }
+}
+
 export default function SchoolPage() {
   const { childId } = useParams()
   const navigate = useNavigate()
@@ -36,7 +76,8 @@ export default function SchoolPage() {
 
   // Notices state
   const [uploading, setUploading] = useState(false)
-  const [parsedItems, setParsedItems] = useState(null) // null = not parsed yet, [] = parsed but empty
+  const [uploadStep, setUploadStep] = useState<'uploading' | 'extracting' | 'parsing' | null>(null)
+  const [parsedItems, setParsedItems] = useState(null)
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [addingItems, setAddingItems] = useState(false)
   const [currentNoticeId, setCurrentNoticeId] = useState(null)
@@ -229,11 +270,12 @@ export default function SchoolPage() {
     }
 
     setUploading(true)
+    setUploadStep('uploading')
     setParsedItems(null)
     setSelectedItems(new Set())
 
     try {
-      // Upload to Supabase Storage
+      // Step 1: Upload to Supabase Storage
       const fileName = `${family.id}/${childId}/${Date.now()}_${file.name}`
       const { error: uploadError } = await supabase.storage
         .from('notices')
@@ -254,8 +296,20 @@ export default function SchoolPage() {
       setCurrentNoticeId(noticeRow.id)
       queryClient.invalidateQueries({ queryKey: ['notices', childId] })
 
-      // Call Edge Function to parse
-      addToast('Uploaded! Parsing document...', 'info')
+      // Step 2: Extract text client-side
+      setUploadStep('extracting')
+      addToast('Extracting text from document...', 'info')
+      const extracted_text = await extractTextFromFile(file)
+
+      if (!extracted_text || extracted_text.trim().length < 10) {
+        addToast('Could not read text from this file. Try a clearer image.', 'error')
+        setParsedItems([])
+        return
+      }
+
+      // Step 3: Send to Edge Function for parsing
+      setUploadStep('parsing')
+      addToast('Parsing document...', 'info')
       const { data: { session } } = await supabase.auth.getSession()
       const parseRes = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-notice`,
@@ -271,6 +325,7 @@ export default function SchoolPage() {
             family_id: family.id,
             file_name: file.name,
             notice_id: noticeRow.id,
+            extracted_text,
           }),
         }
       )
@@ -280,7 +335,6 @@ export default function SchoolPage() {
 
       const items = result.items || []
       setParsedItems(items)
-      // Pre-select all items
       setSelectedItems(new Set(items.map((_, i) => i)))
 
       if (items.length === 0) {
@@ -293,7 +347,8 @@ export default function SchoolPage() {
       setParsedItems([])
     } finally {
       setUploading(false)
-      e.target.value = '' // reset file input
+      setUploadStep(null)
+      e.target.value = ''
     }
   }
 
@@ -341,7 +396,6 @@ export default function SchoolPage() {
           }])
           queryClient.invalidateQueries({ queryKey: ['ptms', childId] })
         } else {
-          // event or other → add as family event
           const startAt = item.date
             ? new Date(`${item.date}T${item.time || '00:00'}`).toISOString()
             : new Date().toISOString()
@@ -386,7 +440,14 @@ export default function SchoolPage() {
     homework: { label: 'Homework', variant: 'amber' },
     exam: { label: 'Exam', variant: 'coral' },
     ptm: { label: 'PTM', variant: 'teal' },
+    task: { label: 'Task', variant: 'primary' },
     other: { label: 'Other', variant: 'gray' },
+  }
+
+  const uploadStepLabel = {
+    uploading: 'Uploading file...',
+    extracting: 'Reading document...',
+    parsing: 'Finding items...',
   }
 
   const pending = homework.filter((h) => !h.done)
@@ -545,7 +606,7 @@ export default function SchoolPage() {
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader size={28} className="text-primary animate-spin" />
-                <p className="text-body font-semibold text-primary">Uploading & parsing...</p>
+                <p className="text-body font-semibold text-primary">{uploadStepLabel[uploadStep] || 'Processing...'}</p>
                 <p className="text-caption text-text-secondary">This takes a few seconds</p>
               </div>
             ) : (
