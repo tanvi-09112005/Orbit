@@ -8,7 +8,7 @@ import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { initializeApp } from 'firebase/app'
-import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw'
+import { getMessaging } from 'firebase/messaging/sw'
 
 // ── Firebase init ─────────────────────────────────────────────
 const firebaseApp = initializeApp({
@@ -21,21 +21,6 @@ const firebaseApp = initializeApp({
 })
 
 const messaging = getMessaging(firebaseApp)
-
-onBackgroundMessage(messaging, (payload) => {
-  const title = payload.data?.title || payload.notification?.title || 'Orbit'
-  const body = payload.data?.body || payload.notification?.body || ''
-  const url = payload.data?.url || '/home'
-
-  self.registration.showNotification(title, {
-  body,
-  icon: '/icons/icon-192x192.png',
-  badge: '/icons/icon-72x72.png',
-  data: { url },
-  tag: 'orbit-notification',
-  renotify: true,
-} as NotificationOptions)
-})
 
 // ── Notification click handler ────────────────────────────────
 self.addEventListener('notificationclick', (event: NotificationEvent) => {

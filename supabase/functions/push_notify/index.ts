@@ -118,11 +118,21 @@ async function sendFCMv1(
       body: JSON.stringify({
         message: {
           token: fcmToken,
-          data: { 
+          notification: { 
             title, 
-            body, 
-            url 
+            body 
           },
+          webpush: {
+            notification: {
+              icon: 'https://orbit-gules.vercel.app/icons/icon-192x192.png',
+              badge: 'https://orbit-gules.vercel.app/icons/icon-72x72.png',
+              tag: 'orbit',
+            },
+            fcm_options: {
+              link: `https://orbit-gules.vercel.app${url}`
+            }
+          },
+          data: { url }
         },
       }),
     }
