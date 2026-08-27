@@ -6,6 +6,7 @@ import { Plus, CheckSquare2, Smile, Monitor, Clock, AlertCircle, Bell } from 'lu
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useFamilyStore } from '../stores/familyStore'
+import { useUIStore } from '../stores/uiStore'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import SectionHeader from '../components/ui/SectionHeader'
