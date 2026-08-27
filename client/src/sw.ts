@@ -7,20 +7,33 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
-import { initializeApp } from 'firebase/app'
-import { getMessaging } from 'firebase/messaging/sw'
+// ── Raw Web Push Handler ─────────────────────────────────────────
+self.addEventListener('push', (event: PushEvent) => {
+  if (!event.data) return
 
-// ── Firebase init ─────────────────────────────────────────────
-const firebaseApp = initializeApp({
-  apiKey: 'AIzaSyDVQdAB_tq9psdxbkmLWRItP7DiLU4j7OQ',
-  authDomain: 'orbit-46b13.firebaseapp.com',
-  projectId: 'orbit-46b13',
-  storageBucket: 'orbit-46b13.firebasestorage.app',
-  messagingSenderId: '655524570140',
-  appId: '1:655524570140:web:ede37300b285c8ef9a6bd9',
+  try {
+    const payload = event.data.json()
+    console.log('[SW] Push received:', payload)
+
+    // FCM HTTP v1 wraps payload. Extract standard fields or fallback to data payload
+    const title = payload.notification?.title || payload.data?.title || 'Orbit'
+    const body = payload.notification?.body || payload.data?.body || ''
+    const url = payload.data?.url || '/home'
+
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        data: { url },
+        tag: 'orbit',
+        renotify: true,
+      })
+    )
+  } catch (err) {
+    console.error('[SW] Error parsing push payload', err)
+  }
 })
-
-const messaging = getMessaging(firebaseApp)
 
 // ── Notification click handler ────────────────────────────────
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
