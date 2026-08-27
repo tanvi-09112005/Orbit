@@ -15,7 +15,7 @@ const firebaseConfig = {
 }
 
 // VAPID key from Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
-const VAPID_KEY = 'BO_lECk5-uEDhPmbWcv9dP4Gt4wWBRJzXUI3Fx7mQygZ53VvdJh4jyxyW8SI_yI0QzGqWYxeTOxwqvNfOUrmtQA'
+const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
@@ -30,6 +30,11 @@ export function usePushNotifications() {
 
     async function subscribe() {
       try {
+        if (!VAPID_KEY) {
+          console.warn('Push notifications disabled: VITE_VAPID_PUBLIC_KEY not set')
+          return
+        }
+
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') return
 

@@ -182,7 +182,7 @@ CREATE TABLE insights (
 -- Push Subscriptions
 CREATE TABLE user_push_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
+  user_id UUID NOT NULL UNIQUE,
   subscription JSONB NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -267,14 +267,45 @@ src/
 - ✅ Notification settings
 - ✅ Sign out
 
+## Push Notification Setup
+
+Push notifications use **Firebase Cloud Messaging (FCM v1)** for delivery and a **Supabase Edge Function** for server-side dispatch.
+
+### 1. Firebase Setup
+1. Go to [Firebase Console](https://console.firebase.google.com) → Project `orbit-46b13`
+2. Project Settings → **Cloud Messaging** → Enable the Cloud Messaging API (if not already)
+3. Project Settings → **Cloud Messaging** → Web Push certificates → Copy the **Key pair** value
+4. Paste it in `.env.local` as `VITE_VAPID_PUBLIC_KEY`
+
+### 2. Firebase Service Account
+1. Firebase Console → Project Settings → **Service Accounts**
+2. Click **Generate new private key** → download the JSON file
+3. Set it as a Supabase secret:
+```bash
+supabase secrets set FIREBASE_SERVICE_ACCOUNT="$(cat path/to/serviceAccountKey.json)"
+```
+
+### 3. Database Migration (if table already exists)
+If `user_push_subscriptions` already exists without the UNIQUE constraint:
+```sql
+ALTER TABLE user_push_subscriptions
+ADD CONSTRAINT user_push_subscriptions_user_id_key UNIQUE (user_id);
+```
+
+### 4. Deploy Edge Function
+```bash
+cd Orbit
+supabase functions deploy push-notify --project-ref innyndztbmrynnzmwgdt
+```
+
+### 5. Verify
+- Assign a task to another family member → the assignee should receive a push notification
+- Check Supabase Dashboard → Edge Functions → `push-notify` logs for errors
+
 ## Next Steps
 
-1. **Connect Supabase**: Update all `TODO` comments in hook files to use real Supabase queries
-2. **Implement Auth**: Integrate Supabase Auth in loginStore and signupPage
-3. **Add Charts**: Use Recharts for mood trends and screen time analytics
-4. **Push Notifications**: Integrate Supabase Edge Functions for push notifications
-5. **PWA**: Configure service worker for offline support
-6. **Testing**: Add test suite with Vitest
+1. **Testing**: Add test suite with Vitest
+2. **Notification Preferences**: Wire up `notification_prefs` from user metadata to filter dispatches in the Edge Function
 
 ## Environment Variables
 
