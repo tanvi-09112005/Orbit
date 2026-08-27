@@ -27,6 +27,7 @@ export default function HomePage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   const { family, children } = useFamilyStore()
+  const { addToast } = useUIStore()
   const [taskSheet, setTaskSheet] = useState(false)
 
   const userName = user?.user_metadata?.name?.split(' ')[0] || 'there'
