@@ -118,17 +118,11 @@ async function sendFCMv1(
       body: JSON.stringify({
         message: {
           token: fcmToken,
-          notification: { title, body },
-          webpush: {
-            fcm_options: { link: url },
-            notification: {
-              icon: '/icons/icon-192x192.png',
-              badge: '/icons/icon-72x72.png',
-              tag: 'orbit-notification',
-              renotify: true,
-            },
+          data: { 
+            title, 
+            body, 
+            url 
           },
-          data: { url },
         },
       }),
     }
@@ -145,32 +139,36 @@ async function sendFCMv1(
 
 // ── Main handler ──────────────────────────────────────────────
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 serve(async (req: Request) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { user_ids, family_id, title, body, url = '/home' } =
-      (await req.json()) as PushRequest
+    const payload = await req.json() as PushRequest
+    console.log('Received push request:', payload)
+    
+    const { user_ids, family_id, title, body, url = '/home' } = payload
 
     if (!title || !body) {
+      console.warn('Missing title or body')
       return new Response(JSON.stringify({ error: 'title and body are required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     if (!user_ids?.length && !family_id) {
+      console.warn('Missing target users or family')
       return new Response(
         JSON.stringify({ error: 'Either user_ids or family_id must be provided' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -180,7 +178,7 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // ── Resolve target user IDs ─────────────────────────────
-    let targetUserIds: string[] = user_ids || []
+    let targetUserIds: string[] = (user_ids || []).filter(Boolean)
 
     if (family_id && !user_ids?.length) {
       const { data: members, error: membersErr } = await supabase
@@ -188,13 +186,21 @@ serve(async (req: Request) => {
         .select('user_id')
         .eq('family_id', family_id)
 
-      if (membersErr) throw membersErr
-      targetUserIds = (members || []).map((m: { user_id: string }) => m.user_id)
+      if (membersErr) {
+        console.error('Error fetching family members:', membersErr)
+        throw membersErr
+      }
+      targetUserIds = (members || [])
+        .map((m: { user_id: string }) => m.user_id)
+        .filter(Boolean) // Remove nulls to avoid Postgres UUID errors
     }
 
+    console.log('Resolved target users:', targetUserIds)
+
     if (!targetUserIds.length) {
+      console.log('Bailing out: No target users found in DB')
       return new Response(JSON.stringify({ sent: 0, message: 'No target users found' }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -204,16 +210,22 @@ serve(async (req: Request) => {
       .select('user_id, subscription')
       .in('user_id', targetUserIds)
 
-    if (subErr) throw subErr
+    if (subErr) {
+      console.error('Error fetching subscriptions:', subErr)
+      throw subErr
+    }
 
     const fcmTokens = (subscriptions || [])
       .filter((s: SubscriptionRow) => s.subscription?.type === 'fcm' && s.subscription?.endpoint)
       .map((s: SubscriptionRow) => s.subscription.endpoint)
 
+    console.log('Found FCM tokens:', fcmTokens.length)
+
     if (!fcmTokens.length) {
+      console.log('Bailing out: No valid FCM tokens for these users')
       return new Response(
         JSON.stringify({ sent: 0, message: 'No push subscriptions found for target users' }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -240,16 +252,18 @@ serve(async (req: Request) => {
     const sent = results.filter(
       (r) => r.status === 'fulfilled' && r.value === true
     ).length
+    
+    console.log(`Successfully sent ${sent} of ${fcmTokens.length} notifications`)
 
     return new Response(
       JSON.stringify({ sent, total: fcmTokens.length }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('push-notify error:', error)
+    console.error('push_notify fatal error:', error)
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

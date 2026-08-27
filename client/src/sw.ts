@@ -21,9 +21,9 @@ const firebaseApp = initializeApp({
 const messaging = getMessaging(firebaseApp)
 
 onBackgroundMessage(messaging, (payload) => {
-  const title = payload.notification?.title || 'Orbit'
-  const body = payload.notification?.body || ''
-  const url = (payload.data?.url as string) || '/home'
+  const title = payload.data?.title || payload.notification?.title || 'Orbit'
+  const body = payload.data?.body || payload.notification?.body || ''
+  const url = payload.data?.url || '/home'
 
   self.registration.showNotification(title, {
   body,

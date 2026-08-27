@@ -63,8 +63,8 @@ export function usePushNotifications() {
 
         // Handle foreground messages
         onMessage(messaging, (payload) => {
-          const title = payload.notification?.title || 'Orbit'
-          const body = payload.notification?.body || ''
+          const title = payload.data?.title || payload.notification?.title || 'Orbit'
+          const body = payload.data?.body || payload.notification?.body || ''
           addToast(`${title}: ${body}`, 'info')
         })
       } catch (err) {
