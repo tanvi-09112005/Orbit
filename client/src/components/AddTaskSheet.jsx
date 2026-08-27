@@ -52,11 +52,11 @@ export default function AddTaskSheet({ open, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'today', family?.id] })
       queryClient.invalidateQueries({ queryKey: ['insights', 'balance', family?.id] })
 
-      // Notify assigned member if it's someone else
+      // Notify assigned member (even if it's yourself, for testing purposes)
       if (assignedTo) {
         const assignedMember = assignableMembers.find((m) => m.id === assignedTo)
         const myName = members.find((m) => m.user_id === user?.id)?.profiles?.name || 'Someone'
-        if (assignedMember && assignedMember.user_id !== user?.id) {
+        if (assignedMember) {
           notifyTaskAssigned(family.id, title.trim(), assignedMember.user_id, myName)
         }
       }
