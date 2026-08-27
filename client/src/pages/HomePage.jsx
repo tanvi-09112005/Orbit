@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, isToday, startOfDay, endOfDay, addDays, startOfWeek, endOfWeek } from 'date-fns'
-import { Plus, CheckSquare2, Smile, Monitor, Clock, AlertCircle } from 'lucide-react'
+import { Plus, CheckSquare2, Smile, Monitor, Clock, AlertCircle, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useFamilyStore } from '../stores/familyStore'
@@ -194,6 +194,25 @@ export default function HomePage() {
     { icon: CheckSquare2,label: 'Add Task',    action: () => setTaskSheet(true) },
     { icon: Smile,       label: 'Log Mood',    action: () => { const c = children[0]; if (c) navigate(`/children/${c.id}/wellbeing`) } },
     { icon: Monitor,     label: 'Screen Time', action: () => { const c = children[0]; if (c) navigate(`/children/${c.id}/screentime`) } },
+    { icon: Bell,        label: 'Test Push',   action: async () => {
+        try {
+          console.log('Sending test push...')
+          addToast('Sending test push...', 'info')
+          const { error } = await supabase.functions.invoke('push_notify', {
+            body: {
+              user_ids: [user.id],
+              title: 'Test Notification',
+              body: 'This is a manual test from the button',
+              url: '/home'
+            }
+          })
+          if (error) throw error
+          console.log('Test push sent successfully')
+        } catch (err) {
+          console.error('Test push error:', err)
+          addToast(`Error: ${err.message}`, 'error')
+        }
+    }},
   ]
 
   return (
